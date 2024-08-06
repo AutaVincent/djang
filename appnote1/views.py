@@ -1,5 +1,4 @@
 from django.shortcuts import render, redirect
-from django.http import HttpResponse
 
 # Create your views here.
 
@@ -11,4 +10,3 @@ def customer(request):
 
 def products(request):
 	return render(request,'appnote1/products.html')
-

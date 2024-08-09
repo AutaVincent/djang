@@ -1,21 +1,25 @@
 from django.shortcuts import render,redirect
-from .forms import CreateUserForm
+from .forms import CreateUserForm, PurchaseForm
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
 from django.contrib.auth import authenticate,login,logout
+from django.contrib.auth.decorators import login_required
+from .models import *
 
 
 def home(request):
-    return render(request,'appnote1/dashboard.html')
+	x = CustomUser.objects.get(id=request.user.id)
+	return render(request,'appnote1/dashboard.html', {'x': x})
 
 def customer(request):
-    return render(request,'appnote1/customer.html')
+	return render(request,'appnote1/customer.html')
 
 def products(request):
-    return render(request,'appnote1/products.html')
+	return render(request,'appnote1/products.html')
 
 def registerpage(request):
         if request.user.is_authenticated:
+            messages.info(request, "you're already logged in")
             return redirect('home')
         else:
 
@@ -31,7 +35,7 @@ def registerpage(request):
                         return redirect('login')
                 else:
                     form=CreateUserForm()
-                    messages.success(request,'Something wentwrong')
+                    messages.warning(request,'Something wentwrong')
                     context={'form':form}
                     return render(request,"appnote1/register.html",context)
             else:
@@ -46,7 +50,7 @@ def loginpage(request):
          else:
     
             if request.method=='POST':
-                email=request.POST.get('email')
+                email=request.POST['email']
                 password= request.POST.get('password')
                 user=authenticate(request,email=email,password=password)
 
@@ -70,3 +74,19 @@ def signout(request):
     logout(request)
     return redirect('login')
 
+@login_required(login_url='login')
+def buy(request):
+	if request.method == "POST":
+		form = PurchaseForm(request.POST)
+		if form.is_valid():
+			x = form.cleaned_data.get('product')
+			print(x.price)
+			Order.objects.create(
+				customer = request.user,
+                product	= x,
+                # status = 'Pending'
+			)
+
+	else:
+		form = PurchaseForm()
+	return render(request, "appnote1/buynow.html", {'form':form})

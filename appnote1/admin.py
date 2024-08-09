@@ -5,3 +5,7 @@ from appnote1.models import *
 
 admin.site.register(CustomUser)
 admin.site.register(Product)
+
+class OrderAdmin(admin.ModelAdmin):
+    list_display = ['customer', 'product', 'status', 'date_created']
+admin.site.register(Order, OrderAdmin)

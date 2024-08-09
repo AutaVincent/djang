@@ -18,30 +18,17 @@ def products(request):
 	return render(request,'appnote1/products.html')
 
 def registerpage(request):
-        if request.user.is_authenticated:
-            messages.info(request, "you're already logged in")
-            return redirect('home')
+    if request.method == 'POST':
+        form = CreateUserForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('login')  # Redirect to the login page after successful registration
         else:
-
-            form=CreateUserForm()
-            if request.method =='POST':
-            
-                form=CreateUserForm(request.POST)
-                if form.is_valid():
-                        form.save() 
-                        email=form.cleaned_data.get('email')
-
-                        messages.success(request,'account was created for ' +email)
-                        return redirect('login')
-                else:
-                    form=CreateUserForm()
-                    messages.warning(request,'Something wentwrong')
-                    context={'form':form}
-                    return render(request,"appnote1/register.html",context)
-            else:
-                form=CreateUserForm()
-                context={'form':form}
-                return render(request,"appnote1/register.html",context)
+            # Optionally print form errors for debugging purposes
+            print(form.errors)
+    else:
+        form = CreateUserForm()
+    return render(request, 'appnote1/register.html', {'form': form})
         
         
 def loginpage(request):

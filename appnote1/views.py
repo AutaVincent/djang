@@ -1,64 +1,106 @@
 from django.shortcuts import render,redirect
-from .forms import *
+from .models import *
+from .forms import OrderForm,CreateUserForm
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
 from django.contrib.auth import authenticate,login,logout
 from django.contrib.auth.decorators import login_required
-from .models import *
-from .decorator import *
+from .decorator import unauthenticated_user,allowed_users,admin_only
+from django.contrib.auth.models import Group
 
 
 
+@login_required(login_url='login')
+@admin_only
 def home(request):
 
 
     orders=Order.objects.all()
-    customers=CustomUser.objects.all()
+    customers=Customer.objects.all()
     total_orders=orders.count()
     total_customers=customers.count()
     delivered=orders.filter(status='Delivered').count()
-    out=orders.filter(status='Out for delivery').count()
-    pending=orders.filter(status='Pending').count()
+    pending=orders.filter(status='pending').count()
 
 
-    context={'orders':orders,'customers':customers,'out':out, 'delivered':delivered,'pending':pending,'total_orders':total_orders,
+    context={'orders':orders,'customers':customers,'delivered':delivered,'pending':pending,'total_orders':total_orders,
              'total_customers':total_customers}
     
     return render(request,'appnote1/dashboard.html',context)
 
 
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
 def customer(request,pk):
-    customer=CustomUser.objects.get(id=pk)
+    customer=Customer.objects.get(id=pk)
     orders=customer.order_set.all()
     order_count=orders.count()
-    context={'customers':customer,'orders':orders,'orders_count':order_count}
+
+
+    myfilters=OrderFilters(request.GET,queryset=orders)
+    orders=myfilters.qs
+    context={'customers':customer,'orders':orders,'orders_count':order_count,'myfilters':myfilters}
+    
     return render(request,'appnote1/customer.html',context)
 
 
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
 def products(request):
+
+
     products=Product.objects.all()
     return render(request,'appnote1/products.html',{'products':products})
 
 
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
+def createOrder(request,pk):
+    customer=Customer.objects.get(id=pk)
+    
+    form=OrderForm(initial={'customer':customer})
+    
+    if request.method=='POST':
+       form=OrderForm(request.POST)
+       if form.is_valid:
+           form.save() 
+           return redirect('/appnote1/')
+    
+      
+    context={'form':form}
+
+
+    return render(request,"appnote1/order_form.html",context)
+
+
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
 def updateOrder(request,pk):
+
+
     order=Order.objects.get(id=pk)
     form=OrderForm(instance=order)
     if request.method=='POST':
-       form=OrderForm(request.POST, instance=order)
+       form=OrderForm(request.POST,instance=order)
        if form.is_valid:
+           
            form.save() 
-           return redirect('home')
+           return redirect('/appnote1/')
+
+
     context={'form':form}
 
 
     return render(request,"appnote1/update_order.html",context)
 
 
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
 def deleteOrder(request,pk):
     order=Order.objects.get(id=pk)
     if request.method=='POST':
         order.delete()
-        return redirect("home")
+        return redirect("/appnote1/")
 
 
     context={'item':order}
@@ -67,37 +109,30 @@ def deleteOrder(request,pk):
     return render(request,'appnote1/delete.html',context)
 
 
-@login_required(login_url='login')
-def purchasePage(request):
-    if request.method == 'POST':
-        form = PurchaseForm(request.POST)
-        if form.is_valid():
-            selection = form.cleaned_data['product']
-            print(selection)
-    else:
-        form = PurchaseForm()
-    return render(request,'appnote1/buynow.html', {'form':form})
-
-
 @unauthenticated_user
 def registerpage(request):
         if request.user.is_authenticated:
-            messages.warning(request, 'you are already logged in')
-            return redirect('home')
+            return redirect('/appnote1/home')
         else:
 
 
             form=CreateUserForm()
-            if request.method =='POST':
+            if request.method=='POST':
             
                 form=CreateUserForm(request.POST)
                 if form.is_valid():
-                        form.save() 
-                        email=form.cleaned_data.get('email')
+              #this allow you to place user under customer by default
+                    user=form.save() 
+                    username=form.cleaned_data.get('username')
 
 
-                        messages.success(request,'account was created for ' +email)
-                        return redirect('login')
+                    group=Group.objects.get(name='customer')
+
+
+                    user.groups.add(group)
+                    
+                    messages.success(request,'account was created for ' +username)
+                    return redirect('/appnote1/login')
                 else:
                     form=CreateUserForm()
                     messages.success(request,'Something wentwrong')
@@ -108,22 +143,21 @@ def registerpage(request):
                 context={'form':form}
                 return render(request,"appnote1/register.html",context)
         
-        
+@unauthenticated_user      
 def loginpage(request):
          if request.user.is_authenticated:
-            return redirect('home')
+            return redirect('/appnote1/home')
          else:
     
             if request.method=='POST':
-                email=request.POST.get('email')
+                username=request.POST.get('username')
                 password= request.POST.get('password')
-                user=authenticate(request,email=email,password=password)
+                user=authenticate(request,username=username,password=password)
 
 
                 if user is not None:
                     login(request, user)
-                    messages.info(request,'login successful')
-                    return redirect('home')
+                    return redirect('/appnote1/home')
                 else:
                     messages.info(request,'Error invalid credential')
                     #mess="Error invalid credential"
@@ -140,4 +174,12 @@ def loginpage(request):
 
 def signout(request):
     logout(request)
-    return redirect('login')
+    return redirect('/appnote1/login')
+
+
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['customer'])
+def userpage(request):
+    
+    context={}
+    return render(request,"appnote1/user.html",context)

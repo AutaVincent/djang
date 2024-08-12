@@ -7,7 +7,7 @@
     <h5 class="card-title">Total Orders</h5>
 </div>
 <div class="card-body">
-    <h5 class="card-title">4</h5>
+    <h5 class="card-title">{{total_orders}}</h5>
 </div>
     </div>
 </div>
@@ -16,25 +16,38 @@
     <div class="col-md">
         <div class="card text-center text-white mb-3" id="orders-pending">
     <div class="card-header">
-        <h5 class="card-title">OrderS Pending</h5>
+        <h5 class="card-title">Pending</h5>
     </div>
     <div class="card-body">
-    <h5 class="card-title">6</h5>
+    <h5 class="card-title">{{pending}}</h5>
     </div>
         </div>
     </div>
     </div>
     <div class="col">
         <div class="col-md">
-            <div class="card text-center text-white mb-3" id="orders-delivered">
+            <div class="card text-center text-white mb-3" id="total-order">
         <div class="card-header">
-            <h5 class="card-title">OrderS Delivered</h5>
+            <h5 class="card-title">Out for Delivery</h5>
         </div>
         <div class="card-body">
-        <h5 class="card-title">10</h5>
+            <h5 class="card-title">{{out}}</h5>
+        </div>
+            </div>
+        </div>
+        </div>
+    <div class="col">
+        <div class="col-md">
+            <div class="card text-center text-white mb-3" id="orders-delivered">
+        <div class="card-header">
+            <h5 class="card-title">Delivered</h5>
+        </div>
+        <div class="card-body">
+        <h5 class="card-title">{{delivered}}</h5>
         </div>
             </div>
         </div>
         </div>
 </div>
+
 
